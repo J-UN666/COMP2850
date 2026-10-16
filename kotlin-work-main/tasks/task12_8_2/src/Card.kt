@@ -1,1 +1,9 @@
 // Task 12.8.2: class to represent playing cards
+
+class Card(val rank: Rank, val suit: Suit) {
+
+    /** The full name of this card, e.g. "Ace of Spades". */
+    val fullName get() = "${rank.name} of ${suit.name}"
+
+    override fun toString() = "$rank$suit"
+}

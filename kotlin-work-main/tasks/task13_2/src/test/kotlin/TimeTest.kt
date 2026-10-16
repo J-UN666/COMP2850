@@ -7,99 +7,81 @@ import io.kotest.matchers.shouldBe
 
 @Suppress("unused")
 class TimeTest : FreeSpec({
+
+    // ----- Test fixture -----
+    // A set of Time objects shared by the tests below. Building each of them
+    // once, here, removes the need to repeat the same constructions in every
+    // test. Each object's own string representation makes a convenient clue.
+
+    val midnight = Time(0, 0, 0)
+    val fiveSec = Time(0, 0, 5)
+    val thirtySec = Time(0, 0, 30)
+    val fiveMin = Time(0, 5, 0)
+    val thirtyMin = Time(0, 30, 0)
+    val fiveHours = Time(5, 0, 0)
+    val noon = Time(12, 0, 0)
+    val endOfDay = Time(23, 59, 59)
+
+    // All the invalid constructions below should raise the same exception,
+    // so this helper removes the repeated withClue/shouldThrow scaffolding.
+    fun shouldReject(clue: String, create: () -> Time) {
+        withClue(clue) { shouldThrow<IllegalArgumentException> { create() } }
+    }
+
+    // ----- Storing the components -----
+
     "Hours stored correctly" {
-        val midnight = Time(0, 0, 0)
-        val noon = Time(12, 0, 0)
-        withClue("00:00:00") { midnight.hours shouldBe 0 }
-        withClue("12:00:00") { noon.hours shouldBe 12 }
+        fiveHours.hours shouldBe 5
+        noon.hours shouldBe 12
+        midnight.hours shouldBe 0
     }
 
     "Minutes stored correctly" {
-        val midnight = Time(0, 0, 0)
-        val thirtyMin = Time(0, 30, 0)
-        withClue("00:00:00") { midnight.minutes shouldBe 0 }
-        withClue("00:30:00") { thirtyMin.minutes shouldBe 30 }
+        thirtyMin.minutes shouldBe 30
+        midnight.minutes shouldBe 0
     }
 
     "Seconds stored correctly" {
-        val midnight = Time(0, 0, 0)
-        val thirtySec = Time(0, 0, 30)
-        withClue("00:00:00") { midnight.seconds shouldBe 0 }
-        withClue("00:00:30") { thirtySec.seconds shouldBe 30 }
+        thirtySec.seconds shouldBe 30
+        midnight.seconds shouldBe 0
     }
 
+    // ----- Validating the arguments -----
+
     "Exception if hours are invalid" {
-        withClue("-1") {
-            shouldThrow<IllegalArgumentException> { Time(-1, 0, 0) }
-        }
-        withClue("24") {
-            shouldThrow<IllegalArgumentException> { Time(24, 0, 0) }
-        }
+        shouldReject("-1") { Time(-1, 0, 0) }
+        shouldReject("24") { Time(24, 0, 0) }
     }
 
     "Exception if minutes are invalid" {
-        withClue("-1") {
-            shouldThrow<IllegalArgumentException> { Time(0, -1, 0) }
-        }
-        withClue("60") {
-            shouldThrow<IllegalArgumentException> { Time(0, 60, 0) }
-        }
+        shouldReject("-1") { Time(0, -1, 0) }
+        shouldReject("60") { Time(0, 60, 0) }
     }
 
     "Exception if seconds are invalid" {
-        withClue("-1") {
-            shouldThrow<IllegalArgumentException> { Time(0, 0, -1) }
-        }
-        withClue("60") {
-            shouldThrow<IllegalArgumentException> { Time(0, 0, 60) }
-        }
+        shouldReject("-1") { Time(0, 0, -1) }
+        shouldReject("60") { Time(0, 0, 60) }
     }
 
-    "00:00:00 is zero seconds since midnight" {
-        val midnight = Time(0, 0, 0)
-        midnight.secondsSinceMidnight shouldBe 0
+    // ----- The secondsSinceMidnight computed property -----
+
+    "Seconds since midnight are computed correctly" {
+        withClue("$midnight") { midnight.secondsSinceMidnight shouldBe 0 }
+        withClue("$thirtySec") { thirtySec.secondsSinceMidnight shouldBe 30 }
+        withClue("$fiveMin") { fiveMin.secondsSinceMidnight shouldBe 300 }
+        withClue("$fiveHours") { fiveHours.secondsSinceMidnight shouldBe 18_000 }
+        withClue("$endOfDay") { endOfDay.secondsSinceMidnight shouldBe 86_399 }
     }
 
-    "00:00:30 is 30 seconds since midnight" {
-        val thirtySec = Time(0, 0, 30)
-        thirtySec.secondsSinceMidnight shouldBe 30
-    }
+    // ----- The string representation -----
 
-    "00:05:00 is 300 seconds since midnight" {
-        val fiveMin = Time(0, 5, 0)
-        fiveMin.secondsSinceMidnight shouldBe 300
-    }
-
-    "05:00:00 is 18,000 seconds since midnight" {
-        val fiveHours = Time(5, 0, 0)
-        fiveHours.secondsSinceMidnight shouldBe 18_000
-    }
-
-    "23:59:59 is 86,399 seconds since midnight" {
-        val t = Time(23, 59, 59)
-        t.secondsSinceMidnight shouldBe 86_399
-    }
-
-    "Hours formatted correctly as string" {
-        val midnight = Time(0, 0, 0)
-        val fiveHours = Time(5, 0, 0)
-        val noon = Time(12, 0, 0)
+    "Components formatted correctly as string" {
         withClue("midnight") { midnight.toString() shouldBe "00:00:00" }
         withClue("5am") { fiveHours.toString() shouldBe "05:00:00" }
-        withClue("noon") { noon.toString() shouldBe "12:00:00"}
-    }
-
-    "Minutes formatted correctly as string" {
-        val fiveMin = Time(0, 5, 0)
-        val thirtyMin = Time(0, 30, 0)
-        withClue("5 min") { fiveMin.toString() shouldBe "00:05:00" }
-        withClue("30 min") { thirtyMin.toString() shouldBe "00:30:00" }
-    }
-
-    "Seconds formatted correctly as string" {
-        val fiveSec = Time(0, 0, 5)
-        val thirtySec = Time(0, 0, 30)
+        withClue("noon") { noon.toString() shouldBe "12:00:00" }
         withClue("5 sec") { fiveSec.toString() shouldBe "00:00:05" }
         withClue("30 sec") { thirtySec.toString() shouldBe "00:00:30" }
+        withClue("5 min") { fiveMin.toString() shouldBe "00:05:00" }
+        withClue("30 min") { thirtyMin.toString() shouldBe "00:30:00" }
     }
 })
